@@ -79,11 +79,11 @@ def blend(target: Tensor, source: Tensor, mask: Tensor, corner_coord: Tensor, mi
     # Compute laplacian
     laplacian = torch.sum(torch.stack([torch.gradient(grad, dim=grad_dim)[0]
                                        for grad, grad_dim in zip(blended_grads, chosen_dimensions)]),
-                          dim=0)
+                          dim=0).to('cuda')
 
     # Compute green function if not provided
     if green_function is None:
-        green_function = construct_green_function(laplacian.shape, channels_dim, requires_pad=False)
+        green_function = construct_green_function(laplacian.shape, channels_dim, requires_pad=False).to('cuda')
     else:
         for d in range(num_dims):
             if d in chosen_dimensions:
@@ -156,6 +156,7 @@ def blend_wide(target: Tensor, source: Tensor, mask: Tensor, corner_coord: Tenso
     if channels_dim is not None:
         del indices_to_blend[channels_dim]
     new_mask[tuple(indices_to_blend)] = mask
+    new_mask = new_mask.to(mask.device)
 
     return blend(target, new_source, new_mask, torch.tensor([0] * len(chosen_dimensions)), mix_gradients, channels_dim,
                  green_function, integration_mode)
